@@ -7,7 +7,7 @@ Sitio personal hecho con Create React App y publicado en Vercel.
 Requiere Node.js 22.
 
 ```bash
-npm ci
+npm install
 npm start
 ```
 
