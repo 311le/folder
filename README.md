@@ -19,7 +19,7 @@ npm run build
 
 ## Publicación
 
-El workflow de GitHub Actions en `.github/workflows/deploy.yml` comprueba que las propuestas de cambio y los cambios enviados a `main` compilen correctamente. El proyecto `folder` de Vercel está conectado al repositorio `311le/folder`: Vercel crea despliegues de vista previa para las ramas de trabajo y publica en producción los cambios de `main`.
+El workflow de GitHub Actions en `.github/workflows/ci.yml` comprueba que las propuestas de cambio y los cambios enviados a `main` compilen correctamente. El proyecto `folder` de Vercel está conectado al repositorio `311le/folder`: Vercel crea despliegues de vista previa para las ramas de trabajo y publica en producción los cambios de `main`.
 
 La validación de GitHub Actions y el despliegue de Vercel se ejecutan de forma independiente tras un push. Para exigir que el build de GitHub Actions pase antes de incorporar una propuesta de cambio, configura una regla de protección para `main` en GitHub que requiera el job `build`.
 
