@@ -17,6 +17,10 @@ export const heroSlides = [
     url: laptop,
     position: { xs: "50% 55%", sm: "50% 50%", md: "45% center", xl: "40% center" },
   },
+  {
+    url: "/assets/hero/neon-background.webp",
+    position: { xs: "60% center", sm: "55% center", md: "center center" },
+  },
 ];
 
 const initialSlide = 0;
