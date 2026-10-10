@@ -14,12 +14,14 @@ const LinkedInButton = ({ iconColor = 'black' }) => {
   const handleClick = () => {
     window.open(
       'https://www.linkedin.com/in/cristian-yamberla-cotacachi-13aba6296',
-      '_blank'
+      '_blank',
+      'noopener,noreferrer'
     );
   };
 
   return (
     <IconButton
+      aria-label="LinkedIn de Cristian Yamberla (abre en otra pestaña)"
       onClick={handleClick}
       sx={{
         backgroundColor: 'transparent',

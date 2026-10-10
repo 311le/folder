@@ -1,0 +1,44 @@
+@font-face {
+  font-family: "Archivo Black";
+  src: url("/assets/fonts/archivo-black-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Bebas Neue";
+  src: url("/assets/fonts/bebas-neue-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Girassol";
+  src: url("/assets/fonts/girassol-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+:root {
+  --font-heading: "Archivo Black", sans-serif;
+  --font-label: "Bebas Neue", sans-serif;
+  --font-accent: "Girassol", serif;
+  --neon-pink: #ff45da;
+  --neon-cyan: #5fe9ff;
+  --sidebar-width: 182px;
+  --sidebar-offset: 224px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #08051b; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 5px; }
+::selection { background: #9627b1; color: white; }
+@media (min-width: 1600px) {
+  :root { --sidebar-width: 210px; --sidebar-offset: 260px; }
+}
+@media (min-width: 600px) and (max-width: 1023px) {
+  :root { --sidebar-width: 134px; --sidebar-offset: 164px; }
+}
+@media (max-width: 599.95px) {
+  :root { --sidebar-offset: 0px; }
+}

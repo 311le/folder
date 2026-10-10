@@ -6,15 +6,15 @@ import { styled } from "@mui/material/styles";
 /* Fuente map */
 const fontMap = {
   archivoBlack: {
-    fontFamily: '"Archivo Black", sans-serif',
+    fontFamily: 'var(--font-heading)',
     fontWeight: 700,
   },
   girassol: {
-    fontFamily: '"Girassol", serif',
+    fontFamily: 'var(--font-accent)',
     fontWeight: 400,
   },
   bebasNeue: {
-    fontFamily: '"Bebas Neue", sans-serif',
+    fontFamily: 'var(--font-label)',
     fontWeight: 400,
   },
   dmSerifTextRegular: {
@@ -44,10 +44,13 @@ const PrimaryText = ({
   align = "left",
   fontSize = { xs: "20px", md: "24px" },
   sx = {},
+  component = "span",
+  ...props
 }) => {
   return (
     <StyledPrimaryText
-      component="span"
+      {...props}
+      component={component}
       align={align}
       font={font}
       sx={{
@@ -70,6 +73,7 @@ PrimaryText.propTypes = {
     PropTypes.object, // responsive MUI
   ]),
   sx: PropTypes.object,
+  component: PropTypes.elementType,
 };
 
 export default PrimaryText;

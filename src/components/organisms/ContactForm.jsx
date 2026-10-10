@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { Box, TextField, Button } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import PrimaryText from "../atoms/TextAtom";
-import emailjs from "emailjs-com";
+import emailjs from "@emailjs/browser";
 
 const ContactForm = () => {
   const formRef = useRef();
@@ -28,7 +28,7 @@ const ContactForm = () => {
         "service_anacospii",
         "template_a265904",
         formRef.current,
-        "ziZVh5aZs3dIgmulq"
+        { publicKey: "ziZVh5aZs3dIgmulq" }
       )
       .then(() => {
         alert("Mensaje enviado correctamente");

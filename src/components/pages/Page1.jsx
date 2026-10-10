@@ -3,7 +3,7 @@ import { Container, Box } from "@mui/material";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { Element, scroller } from "react-scroll";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import View1 from "../templates/vistaPrincipal/View1";
@@ -29,14 +29,14 @@ const ViewLayout = () => {
     const handleHashChange = () => {
       const hash = window.location.hash.substring(1);
       if (hash) {
-        scroller.scrollTo(hash, { duration: 800, smooth: true });
+        scroller.scrollTo(hash, { duration: reduceMotion ? 0 : 800, smooth: !reduceMotion, offset: scrollOffset });
       }
     };
 
     window.addEventListener("hashchange", handleHashChange);
     handleHashChange();
     return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
+  }, [reduceMotion, scrollOffset]);
 
   useEffect(() => {
     if (skipNextScrollRef.current) {
@@ -56,13 +56,13 @@ const ViewLayout = () => {
           window.pageYOffset + element.getBoundingClientRect().top + scrollOffset;
         window.scrollTo({
           top: targetTop,
-          behavior: useSmooth ? "smooth" : "auto",
+          behavior: useSmooth && !reduceMotion ? "smooth" : "auto",
         });
       } else {
         scroller.scrollTo(section.id, {
-          duration: 800,
+          duration: reduceMotion ? 0 : 800,
           delay: 0,
-          smooth: "easeInOutQuart",
+          smooth: reduceMotion ? false : "easeInOutQuart",
           offset: scrollOffset,
         });
       }
@@ -88,7 +88,7 @@ const ViewLayout = () => {
       window.clearTimeout(releaseId);
       routeScrollRef.current = false;
     };
-  }, [location.pathname, scrollOffset, setActiveSection, setScrollSource]);
+  }, [location.pathname, scrollOffset, reduceMotion, setActiveSection, setScrollSource]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -131,9 +131,9 @@ const ViewLayout = () => {
   }, [location.pathname, navigate, isMobile, setActiveSection, setScrollSource]);
 
   const sections = [
-    { ...appSections[0], component: <View1 /> },
+    { ...appSections[0], component: <View1 />, fullBleed: true },
     { ...appSections[1], component: <ProjectView /> },
-    { ...appSections[2], component: <SkillsPage /> },
+    { ...appSections[2], component: <SkillsPage />, fullBleed: true },
     { ...appSections[3], component: <ContactPage /> },
   ];
 
@@ -151,18 +151,10 @@ const ViewLayout = () => {
       <Box
         component="main"
         sx={{
-          ml: {
-            xs: 0,
-            sm: "150px",
-            md: "180px",
-          },
           pt: { xs: "96px", sm: 0 },
           minHeight: "100vh",
           background:
             "linear-gradient(180deg, #05020f 0%, #061043 42%, #020512 100%)",
-          "@media (min-width:1024px)": {
-            ml: "230px",
-          },
         }}
       >
         <Container maxWidth={false} disableGutters>
@@ -184,6 +176,7 @@ const ViewLayout = () => {
                 <Box
                   id={section.id}
                   my={0}
+                  sx={{ ml: section.fullBleed ? 0 : { xs: 0, sm: "var(--sidebar-offset)" } }}
                 >
                   {section.component}
                 </Box>
