@@ -15,10 +15,10 @@ import CodeIcon from "@mui/icons-material/Code";
 import LaunchIcon from "@mui/icons-material/Launch";
 import PersonIcon from "@mui/icons-material/Person";
 import PrimaryText from "../atoms/TextAtom";
+import ProjectDescription from "../molecules/ProjectDescription";
 
 const ProjectDialog = ({ open, onClose, project }) => {
   const title = project?.title ?? "Proyecto sin titulo";
-  const desc = project?.desc ?? "Sin descripcion disponible.";
 
   return (
     <Dialog
@@ -50,6 +50,7 @@ const ProjectDialog = ({ open, onClose, project }) => {
         sx={{
           position: "relative",
           minHeight: { xs: 170, sm: 240, md: 300 },
+          flexShrink: 0,
           display: "flex",
           alignItems: "flex-end",
           p: { xs: 2, sm: 3.5 },
@@ -93,6 +94,8 @@ const ProjectDialog = ({ open, onClose, project }) => {
             }}
           />
           <PrimaryText
+            id="project-dialog-title"
+            component="h2"
             font="archivoBlack"
             align="left"
             fontSize={{ xs: "20px", sm: "30px", md: "36px" }}
@@ -109,6 +112,7 @@ const ProjectDialog = ({ open, onClose, project }) => {
 
       <DialogContent
         sx={{
+          minHeight: 0,
           px: { xs: 2, sm: 3.5 },
           py: { xs: 2, sm: 3 },
         }}
@@ -123,18 +127,7 @@ const ProjectDialog = ({ open, onClose, project }) => {
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
           }}
         >
-          <Typography
-            sx={{
-              fontSize: { xs: "14px", sm: "16px", md: "18px" },
-              lineHeight: 1.72,
-              color: "#E5E7EB",
-              fontFamily: "DM Serif Text, serif",
-              textAlign: { xs: "left", sm: "justify" },
-              overflowWrap: "anywhere",
-            }}
-          >
-            {desc}
-          </Typography>
+          <ProjectDescription project={project} />
 
           {project?.rol && (
             <Stack
@@ -187,6 +180,7 @@ const ProjectDialog = ({ open, onClose, project }) => {
 
       <DialogActions
         sx={{
+          flexShrink: 0,
           justifyContent: "space-between",
           gap: 1.5,
           px: { xs: 2, sm: 3.5 },

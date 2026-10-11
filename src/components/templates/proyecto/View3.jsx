@@ -1,54 +1,87 @@
-import React from "react";
-import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
+import { useId, useRef } from "react";
+import { Box, Button } from "@mui/material";
+import ArrowForwardRounded from "@mui/icons-material/ArrowForwardRounded";
+import OpenInNewRounded from "@mui/icons-material/OpenInNewRounded";
 import ContainerComponent from "../../atoms/Container";
 import PrimaryText from "../../atoms/TextAtom";
 import ProjectList from "./ProjectList";
+import { additionalProjectLinks } from "./projectsData";
+import projectsBackground from "../../styles/images/projects-neon-background.webp";
+import "../../styles/ProjectsSection.css";
 
 const ProjectView = () => {
-  return (
-    <ContainerComponent watermark="pg">
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          width: "100%",
-        }}
-      >
-        {/* HEADER */}
-        <Box
-          sx={{
-            width: "100%",
-            textAlign: "center",
-            py: { xs: 2, sm: 3, md: 4 },
-            mb: { xs: 2, sm: 3 },
-            borderRadius: 2,
-            background:
-              "linear-gradient(180deg, rgba(128,0,128,0.8), rgba(128,0,128,0.3))",
-          }}
-        >
-          <PrimaryText
-            font="archivoBlack"
-            align="center"
-            fontSize={{ xs: "18px", sm: "24px", md: "32px", lg: "36px" }}
-          >
-            <span style={{ color: "#ffbd59" }}>
-              PROYECTOS Y COLABORACIONES
-            </span>
-          </PrimaryText>
-        </Box>
+  const carouselRef = useRef(null);
+  const carouselId = useId();
+  const titleId = useId();
 
-        {/* GRID CONTENEDOR */}
-        <Grid
-          container
-          spacing={{ xs: 2, sm: 3, md: 4 }}
-          justifyContent="center"
-          alignItems="stretch"
-          sx={{ width: "100%" }}
-        >
-          <ProjectList />
-        </Grid>
+  const exploreProjects = () => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    carousel.focus({ preventScroll: true });
+    carousel.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "nearest",
+    });
+  };
+
+  return (
+    <ContainerComponent variant="cover">
+      <Box component="section" className="projects-section" aria-labelledby={titleId}>
+        <div
+          className="projects-background"
+          style={{ backgroundImage: `url(${projectsBackground})` }}
+          aria-hidden="true"
+        />
+        <div className="projects-overlay" aria-hidden="true" />
+        <div className="projects-layout">
+          <header className="projects-intro">
+            <PrimaryText font="bebasNeue" component="p" fontSize="inherit" className="projects-eyebrow">
+              <span aria-hidden="true">//</span> PORTAFOLIO
+            </PrimaryText>
+            <PrimaryText
+              id={titleId}
+              font="archivoBlack"
+              component="h2"
+              fontSize="inherit"
+              className="projects-title"
+            >
+              PROYECTOS
+              <span>Y COLABORACIONES</span>
+            </PrimaryText>
+            <PrimaryText font="bebasNeue" component="p" fontSize="inherit" className="projects-description">
+              Desarrollo soluciones web y aplicaciones modernas, combinando diseño,
+              rendimiento y experiencia de usuario.
+            </PrimaryText>
+            <Button
+              className="projects-explore"
+              onClick={exploreProjects}
+              aria-controls={carouselId}
+              endIcon={<ArrowForwardRounded />}
+            >
+              Explorar proyectos
+            </Button>
+
+            {additionalProjectLinks.length > 0 && (
+              <div className="projects-more">
+                <PrimaryText font="girassol" component="p" fontSize="inherit" className="projects-more-label">
+                  Más proyectos en línea
+                </PrimaryText>
+                <div className="projects-more-links">
+                  {additionalProjectLinks.map((project) => (
+                    <a key={project.id} href={project.link} target="_blank" rel="noopener noreferrer">
+                      {project.title}
+                      <OpenInNewRounded aria-hidden="true" />
+                      <span className="projects-sr-only"> (abre en otra pestaña)</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </header>
+          <ProjectList carouselRef={carouselRef} id={carouselId} />
+        </div>
       </Box>
     </ContainerComponent>
   );

@@ -1,369 +1,237 @@
-import { useState } from "react";
-import Grid from "@mui/material/Grid";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import {
-  Card,
-  CardContent,
-  CardMedia,
-  Chip,
-  Box,
-  Stack,
-  Button,
-} from "@mui/material";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import PersonIcon from "@mui/icons-material/Person";
-import ProyectoUno from "../../styles/images/proyectouno.jpg";
-import ProjectDialog from "../../organisms/ProjectDialog";
+import { useEffect, useId, useRef, useState } from "react";
+import { IconButton, useMediaQuery } from "@mui/material";
+import PauseRounded from "@mui/icons-material/PauseRounded";
+import PlayArrowRounded from "@mui/icons-material/PlayArrowRounded";
+import ChevronLeftRounded from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
 import PrimaryText from "../../atoms/TextAtom";
+import ProjectCard from "../../molecules/ProjectCard";
+import ProjectDialog from "../../organisms/ProjectDialog";
+import { projects } from "./projectsData";
 
-const projects = [
-  {
-    img: ProyectoUno,
-    title: "AnacosPii - Sitio web de bordados",
-    desc:
-      "Un local comercial tradicional de bordados enfrentaba problemas al contar con una tienda local su intencion era expandirse al ambito digital. Para ello creamos un sitio web con informacion del local y un catalogo digital de sus disenos. Utilice React con Material-UI en el front, desarrollando componentes reutilizables y escalables. En el backend utilice SaaS con un servicio de email.js que almacenara todos los formularios de pedido. Ademas, se implemento la autenticacion de reCAPTCHA para controlar los formularios.",
-    link: "https://webpi.vercel.app",
-    github: "https://github.com/tu-repo",
-    rol: "Desarrollador Frontend",
-    etiquetas: ["React", "Material-UI", "SaaS", "HTML&CSS"],
-  },
-];
+const getPosition = (index, activeIndex, count) => {
+  if (index === activeIndex) return "active";
+  // Two projects occupy distinct positions; never duplicate a slide.
+  if (count === 2) return index < activeIndex ? "previous" : "next";
+  if (index === (activeIndex + 1) % count) return "next";
+  if (count > 2 && index === (activeIndex - 1 + count) % count) return "previous";
+  return "hidden";
+};
 
-const getPreviewText = (text, wordLimit = 5) =>
-  text.split(/\s+/).slice(0, wordLimit).join(" ");
-
-const ProjectList = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
-  const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
-
-  const [openDialog, setOpenDialog] = useState(false);
+const ProjectList = ({ carouselRef, id, items = projects }) => {
+  const generatedId = useId();
+  const carouselId = id || generatedId;
+  const localRef = useRef(null);
+  const regionRef = carouselRef || localRef;
+  const touchStart = useRef(null);
+  const suppressClickUntil = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [touching, setTouching] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
+  const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const count = items.length;
+  const current = count ? activeIndex % count : 0;
+  const canNavigate = count > 1;
+  const autoPlaying = canNavigate && !reduceMotion && !paused && !hovered &&
+    !focused && !touching && !openDialog && visible && pageVisible;
 
-  const handleOpenDialog = (project) => {
+  useEffect(() => {
+    const updateVisibility = () => setPageVisible(!document.hidden);
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold: 0.25 }
+    );
+    if (regionRef.current) observer.observe(regionRef.current);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", updateVisibility);
+    };
+  }, [regionRef]);
+
+  useEffect(() => {
+    if (!autoPlaying) return;
+    const timer = window.setTimeout(() => {
+      setDirection(1);
+      setActiveIndex((index) => (index + 1) % count);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [autoPlaying, activeIndex, count]);
+
+  const move = (direction) => {
+    if (canNavigate) {
+      setDirection(direction);
+      setActiveIndex((index) => (index + direction + count) % count);
+    }
+  };
+
+  const selectCard = (index) => {
+    if (index !== current) setDirection(index > current ? 1 : -1);
+    setActiveIndex(index);
+    regionRef.current?.focus({ preventScroll: true });
+  };
+
+  const handleKeyDown = (event) => {
+    if (!canNavigate || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === "ArrowLeft") move(-1);
+    if (event.key === "ArrowRight") move(1);
+    if (event.key === "Home") selectCard(0);
+    if (event.key === "End") selectCard(count - 1);
+    regionRef.current?.focus({ preventScroll: true });
+  };
+
+  const handleTouchStart = (event) => {
+    setTouching(true);
+    touchStart.current = event.touches.length === 1
+      ? { x: event.touches[0].clientX, y: event.touches[0].clientY }
+      : null;
+  };
+
+  const handleTouchEnd = (event) => {
+    setTouching(false);
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || !canNavigate || !event.changedTouches.length) return;
+    const deltaX = event.changedTouches[0].clientX - start.x;
+    const deltaY = event.changedTouches[0].clientY - start.y;
+    if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.25) {
+      suppressClickUntil.current = Date.now() + 350;
+      move(deltaX < 0 ? 1 : -1);
+    }
+  };
+
+  const openDetails = (project) => {
     setSelectedProject(project);
     setOpenDialog(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedProject(null);
-  };
-
   return (
     <>
-      <Grid
-        container
-        spacing={isMobile ? 2 : 4}
-        justifyContent="center"
-        sx={{
-          width: "100%",
-          mt: isDesktop ? "1vh" : 0,
+      <div
+        ref={regionRef}
+        id={carouselId}
+        className={`projects-carousel${count === 1 ? " projects-carousel-single" : ""}`}
+        style={{ "--project-entry-offset": direction < 0 ? "-32px" : "32px" }}
+        role="region"
+        aria-roledescription="carrusel"
+        aria-label="Proyectos y colaboraciones"
+        aria-describedby={canNavigate ? `${carouselId}-instructions` : undefined}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        onPointerEnter={(event) => { if (event.pointerType === "mouse") setHovered(true); }}
+        onPointerLeave={() => setHovered(false)}
+        onFocusCapture={() => setFocused(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
         }}
       >
-        {projects.map((project, index) => (
-          <Grid
-            item
-            key={project.title}
-            xs={12}
-            sm={10}
-            md={8}
-            lg={10}
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <Box
-              sx={{
-                width: "100%",
-                maxWidth: isDesktop ? "940px" : isTablet ? "620px" : "100%",
-              }}
+        {canNavigate && (
+          <p id={`${carouselId}-instructions`} className="projects-sr-only">
+            Usa las flechas izquierda y derecha para cambiar de proyecto,
+            Inicio y Fin para ir al primero o al último. También puedes deslizar las tarjetas.
+          </p>
+        )}
+        <div
+          className="projects-stage"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={() => { touchStart.current = null; setTouching(false); }}
+          onClickCapture={(event) => {
+            if (Date.now() < suppressClickUntil.current) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          }}
+        >
+          {items.map((project, index) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              index={index}
+              total={count}
+              position={getPosition(index, current, count)}
+              onSelect={() => selectCard(index)}
+              onOpenDetails={() => openDetails(project)}
+            />
+          ))}
+          {!count && (
+            <PrimaryText font="girassol" component="p" className="projects-empty">
+              Próximamente, nuevos proyectos.
+            </PrimaryText>
+          )}
+        </div>
+
+        {canNavigate && (
+          <>
+            <IconButton
+              className="projects-arrow projects-arrow-previous"
+              aria-label="Proyecto anterior"
+              onClick={() => move(-1)}
             >
-              <Card
-                sx={{
-                  width: "100%",
-                  borderRadius: isMobile ? 3 : 5,
-                  background:
-                    "radial-gradient(circle at top, rgba(43, 24, 33, 0.85) 0%, rgba(43, 24, 33, 0.7) 35%, rgba(0, 0, 255, 0.15) 65%, rgba(0,0,0,1) 100%)",
-                  color: "#fff",
-                  boxShadow: isMobile
-                    ? "0 12px 32px rgba(124,58,237,0.35)"
-                    : "0 15px 50px rgba(124,58,237,0.45)",
-                  border: "1px solid rgba(186,104,200,0.35)",
-                  transition: "transform 0.35s ease, box-shadow 0.35s ease",
-                  "&:hover": {
-                    transform: isMobile ? "none" : "scale(1.03)",
-                    boxShadow: "0 25px 70px rgba(124,58,237,0.55)",
-                  },
-                }}
+              <ChevronLeftRounded />
+            </IconButton>
+            <IconButton
+              className="projects-arrow projects-arrow-next"
+              aria-label="Proyecto siguiente"
+              onClick={() => move(1)}
+            >
+              <ChevronRightRounded />
+            </IconButton>
+          </>
+        )}
+
+        {count > 0 && (
+          <div className="projects-carousel-footer">
+            {canNavigate && !reduceMotion && (
+              <IconButton
+                className="projects-autoplay"
+                aria-label={paused ? "Activar avance automático" : "Pausar avance automático"}
+                onClick={() => setPaused((value) => !value)}
               >
-                <Box sx={{ position: "relative" }}>
-                  <a
-                    href={project.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Abrir ${project.title}`}
-                    style={{
-                      display: "block",
-                      position: "relative",
-                      overflow: "hidden",
-                      background: "rgba(0,0,0,0.35)",
-                    }}
+                {paused ? <PlayArrowRounded /> : <PauseRounded />}
+              </IconButton>
+            )}
+            {canNavigate && (
+              <div className="projects-indicators" role="group" aria-label="Seleccionar proyecto">
+                {items.map((project, index) => (
+                  <button
+                    key={project.id}
+                    type="button"
+                    className="projects-indicator"
+                    aria-label={`Ir al proyecto ${index + 1}: ${project.name || project.title}`}
+                    aria-current={index === current ? "true" : undefined}
+                    onClick={() => selectCard(index)}
                   >
-                    <CardMedia
-                      component="img"
-                      image={project.img}
-                      alt={project.title}
-                      sx={{
-                        width: "100%",
-                        aspectRatio: {
-                          xs: "16 / 10",
-                          sm: "16 / 9",
-                          lg: "21 / 9",
-                        },
-                        height: "auto",
-                        borderTopLeftRadius: isMobile ? "12px" : 20,
-                        borderTopRightRadius: isMobile ? "12px" : 20,
-                        objectFit: "contain",
-                        backgroundColor: "#050816",
-                        cursor: "pointer",
-                        transition: "transform 0.4s ease",
-                        "&:hover": {
-                          transform:
-                            isMobile || isDesktop ? "none" : "scale(1.05)",
-                        },
-                      }}
-                    />
-
-                    {isMobile && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          px: 1.5,
-                          py: 1,
-                          color: "#fff",
-                          background:
-                            "linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.75))",
-                          fontSize: "12px",
-                          fontWeight: 800,
-                        }}
-                      >
-                        <span>Ver proyecto</span>
-                        <OpenInNewIcon sx={{ fontSize: 16 }} />
-                      </Box>
-                    )}
-                  </a>
-
-                  <Chip
-                    label="Colaborativo"
-                    sx={{
-                      position: "absolute",
-                      top: isMobile ? 10 : 16,
-                      right: isMobile ? 10 : 16,
-                      backgroundColor: "#9333ea",
-                      color: "#fff",
-                      fontWeight: "bold",
-                      boxShadow: "0 4px 12px rgba(147,51,234,0.6)",
-                      fontSize: isDesktop ? "16px" : isMobile ? "10px" : "12px",
-                      height: isMobile ? 24 : 32,
-                    }}
-                  />
-                </Box>
-
-                <CardContent
-                  sx={{
-                    p: 0,
-                    background:
-                      "linear-gradient(180deg, rgba(31,41,55,0.92), rgba(15,23,42,0.96))",
-                    borderTop: "1px solid rgba(255,255,255,0.1)",
-                    "&:last-child": {
-                      pb: 0,
-                    },
-                  }}
-                >
-                  <Box sx={{ p: { xs: 1.5, sm: 3, lg: 4 } }}>
-                    <PrimaryText
-                      font="girassol"
-                      fontSize={
-                        isMobile ? "18px" : isTablet ? "22px" : "36px"
-                      }
-                      sx={{
-                        display: "block",
-                        fontWeight: "bold",
-                        lineHeight: 1.15,
-                        mb: isMobile ? 0 : 1,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      <span style={{ color: "#E9D5FF" }}>{project.title}</span>
-                    </PrimaryText>
-
-                  {!isMobile && (
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: "flex",
-                        alignItems: "baseline",
-                        flexWrap: "wrap",
-                        gap: 0.75,
-                      }}
-                    >
-                      <PrimaryText
-                        font="dmSerifTextRegularItalic"
-                        fontSize={isTablet ? "14px" : "18px"}
-                        sx={{
-                          color: "#CBD5E1",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {getPreviewText(project.desc, 5)}...
-                      </PrimaryText>
-
-                      <Button
-                        variant="text"
-                        size="small"
-                        onClick={() => handleOpenDialog(project)}
-                        sx={{
-                          minWidth: "auto",
-                          px: 0.75,
-                          py: 0,
-                          color: "#FACC15",
-                          fontWeight: 900,
-                          fontSize: isDesktop ? "17px" : "14px",
-                          textTransform: "none",
-                          position: "relative",
-                          animation: "readMoreFloat 1.8s ease-in-out infinite",
-                          "&::after": {
-                            content: '""',
-                            position: "absolute",
-                            left: 8,
-                            right: 8,
-                            bottom: 1,
-                            height: "2px",
-                            borderRadius: 999,
-                            backgroundColor: "#FACC15",
-                            transform: "scaleX(0)",
-                            transformOrigin: "left",
-                            transition: "transform 0.25s ease",
-                          },
-                          "&:hover": {
-                            backgroundColor: "rgba(250,204,21,0.08)",
-                            transform: "translateX(4px)",
-                          },
-                          "&:hover::after": {
-                            transform: "scaleX(1)",
-                          },
-                          "@keyframes readMoreFloat": {
-                            "0%, 100%": {
-                              textShadow: "0 0 0 rgba(250,204,21,0)",
-                            },
-                            "50%": {
-                              textShadow: "0 0 12px rgba(250,204,21,0.55)",
-                            },
-                          },
-                        }}
-                      >
-                        Ver mas
-                      </Button>
-                    </Box>
-                  )}
-
-                  {isMobile && (
-                    <Button
-                      variant="text"
-                      size="small"
-                      onClick={() => handleOpenDialog(project)}
-                      sx={{
-                        width: "100%",
-                        mt: 1.25,
-                        py: 0.75,
-                        px: 1,
-                        borderRadius: 2,
-                        border: "1px solid rgba(250,204,21,0.45)",
-                        backgroundColor: "rgba(250,204,21,0.08)",
-                        color: "#FACC15",
-                        fontWeight: "bold",
-                        fontSize: "13px",
-                        textTransform: "none",
-                        "&:hover": {
-                          backgroundColor: "rgba(250,204,21,0.16)",
-                        },
-                      }}
-                    >
-                      Leer mas
-                    </Button>
-                  )}
-
-                  {!isMobile && (
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
-                      sx={{ mt: 3 }}
-                    >
-                      <PersonIcon sx={{ fontSize: 22, color: "#4ADE80" }} />
-                      <PrimaryText font="girassol" fontSize="20px">
-                        <span style={{ color: "#F472B6" }}>
-                          Rol: {project.rol}
-                        </span>
-                      </PrimaryText>
-                    </Stack>
-                  )}
-
-                  {!isMobile && (
-                    <Stack
-                      direction="row"
-                      sx={{
-                        flexWrap: "wrap",
-                        mt: 2,
-                        gap: { xs: "6px", sm: "10px", md: "14px" },
-                      }}
-                    >
-                      {project.etiquetas.map((etiqueta) => (
-                        <Chip
-                          key={etiqueta}
-                          label={etiqueta}
-                          sx={{
-                            backgroundColor: "rgba(59,130,246,0.15)",
-                            color: "#93C5FD",
-                            border: "1px solid rgba(59,130,246,0.35)",
-                            fontWeight: 600,
-                            fontSize: isDesktop ? "16px" : "12px",
-                            px: 1,
-                            py: 0.5,
-                            transition:
-                              "transform 0.3s ease, box-shadow 0.3s ease",
-                            "&:hover": {
-                              transform: "scale(1.15)",
-                              boxShadow: "0 6px 18px rgba(59,130,246,0.4)",
-                            },
-                          }}
-                        />
-                      ))}
-                    </Stack>
-                  )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          </Grid>
-        ))}
-      </Grid>
-
+                    <span />
+                  </button>
+                ))}
+              </div>
+            )}
+            <PrimaryText font="bebasNeue" component="p" fontSize="inherit" className="projects-counter" aria-hidden="true">
+              <span>{String(current + 1).padStart(2, "0")}</span>
+              <span className="projects-counter-line" />
+              {String(count).padStart(2, "0")}
+            </PrimaryText>
+          </div>
+        )}
+        <p className="projects-sr-only" aria-live={autoPlaying ? "off" : "polite"} aria-atomic="true">
+          {count ? `Proyecto ${current + 1} de ${count}: ${items[current].title}` : "No hay proyectos disponibles"}
+        </p>
+      </div>
       <ProjectDialog
         open={openDialog}
-        onClose={handleCloseDialog}
+        onClose={() => setOpenDialog(false)}
         project={selectedProject}
-        isMobile={isMobile}
       />
     </>
   );
